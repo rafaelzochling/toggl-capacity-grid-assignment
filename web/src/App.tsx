@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CapacityGrid } from './CapacityGrid'
-import { formatDate, isValidRange, rangeFromToday, shiftRange, startOfWeek, type Range } from './weeks'
+import { MAX_WEEKS, formatDate, isValidRange, rangeFromToday, shiftRange, startOfWeek, todayUTC, weekCount, type Range } from './weeks'
 
 // The scaffold's window. It holds the hand-written cases in the seed
 // (an exactly-full week, a weekend split, an over-allocation, a person
@@ -14,12 +14,13 @@ const DEFAULT_RANGE: Range = { from: '2025-12-29', to: '2026-01-16' }
 function readRange(search: string): Range {
   const q = new URLSearchParams(search)
   const r = { from: q.get('from') ?? '', to: q.get('to') ?? '' }
-  return isValidRange(r) ? r : DEFAULT_RANGE
+  return isValidRange(r) && weekCount(r) <= MAX_WEEKS ? r : DEFAULT_RANGE
 }
 
 export function App() {
   const [range, setRange] = useState<Range>(() => readRange(window.location.search))
-  const today = new Date()
+  const [hint, setHint] = useState<string | null>(null)
+  const today = todayUTC()
   const currentWeek = formatDate(startOfWeek(today))
 
   useEffect(() => {
@@ -27,9 +28,17 @@ export function App() {
     window.history.replaceState(null, '', `?${q}`)
   }, [range])
 
+  // The API caps a request at MAX_WEEKS; refusing the change here is
+  // better than letting the grid ask for a range it will be told off for.
   const setEnd = (key: keyof Range, value: string) => {
     const next = { ...range, [key]: value }
-    if (isValidRange(next)) setRange(next)
+    if (!isValidRange(next)) return
+    if (weekCount(next) > MAX_WEEKS) {
+      setHint(`Pick at most ${MAX_WEEKS} weeks`)
+      return
+    }
+    setHint(null)
+    setRange(next)
   }
 
   return (
@@ -51,6 +60,7 @@ export function App() {
         <label>
           To <input type="date" value={range.to} min={range.from} onChange={(e) => setEnd('to', e.target.value)} />
         </label>
+        {hint && <span className="hint">{hint}</span>}
       </nav>
       <CapacityGrid from={range.from} to={range.to} currentWeek={currentWeek} />
     </main>
