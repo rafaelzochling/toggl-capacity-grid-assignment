@@ -40,3 +40,9 @@ export function fetchCapacity(from: string, to: string, signal?: AbortSignal): P
   const q = new URLSearchParams({ from, to })
   return request<CapacityResponse>(`/api/capacity?${q}`, { signal })
 }
+
+export type PersonSummary = Pick<Person, 'id' | 'name' | 'weeklyHours'>
+
+export function updateWeeklyHours(id: number, weeklyHours: number): Promise<PersonSummary> {
+  return request<PersonSummary>(`/api/people/${id}`, { method: 'PATCH', body: JSON.stringify({ weeklyHours }) })
+}
