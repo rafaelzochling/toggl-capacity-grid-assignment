@@ -82,3 +82,32 @@ td.over .flag {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+button.edit {
+  all: unset;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+button.edit:focus-visible {
+  outline: 2px solid currentColor;
+}
+
+td.editing form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+td.editing input {
+  width: 4.5rem;
+  font: inherit;
+  text-align: right;
+}
+
+.saving {
+  opacity: 0.6;
+  font-size: 0.85em;
+}
