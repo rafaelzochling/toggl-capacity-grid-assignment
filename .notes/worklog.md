@@ -36,3 +36,16 @@ left unfinished. Append as you go; a line or two per entry is right.
 - It found four real defects, all fixed in this branch: only the first 100 people were shown and the summary claimed to count the whole range (now "Load more" by cursor, count labelled as loaded); an unknown cursor returned an empty 200 page (now 404); "This week" used UTC day on a local clock (Monday 01:30 in Tallinn landed on the previous week); the picker allowed ranges the API rejects and Retry looped on the 400 (now capped in the UI, no Retry on 4xx, grid dims on error).
 - It also caught a stale-closure bug in my cache re-seeding after a save: if the range changed while the PATCH was in flight, one range's rows were filed under another's key. Fixed by clearing the cache instead of re-seeding.
 - Deferred from its performance notes: the `(start_date, end_date)` index is weak for `start_date <= day` (half the table qualifies); `(person_id, start_date)` would serve this query better, and the arithmetic weekday-overlap form would cut the day-join row count ~10×. Schema is fixed for this exercise, so written down, not done.
+
+## 2026-10-12 — wrap-up (01:58, inside the budget)
+
+- Extra, not asked for: a Toggl Track-flavoured stylesheet (PR #7). CSS only, no logic touched; tokens on :root with a dark-scheme override. Kept because it cost minutes and makes the over/full/empty states read better, dropped from the "core" story on purpose.
+- Verified on main before stopping: `.notes/smoke.sh` ALL OK, Vitest 7/7, tsc clean, go vet + go test clean, and the grid opened in a browser for the default range, an edit, a failed save with the API stopped, a retry, week navigation and Load more.
+- Deferred, in the order I would pick them up:
+  1. Compare-and-set on PATCH (`expectedWeeklyHours`, 409 with the current value) so two managers editing the same person see it. No schema change.
+  2. A working calendar: holidays and per-person schedules. Weekends-only is an assumption today.
+  3. Index `(person_id, start_date)` and the arithmetic weekday-overlap query (~10× fewer joined rows). Schema is fixed in this exercise.
+  4. "Only over-allocated" filter and worst-week-first sort: the direct answer to "see who is over-committed before the week starts".
+  5. Virtualised rows instead of Load more once rosters reach thousands; the API already pages.
+  6. More tests: the SQL against the seeded DB, a PATCH validation table, Load more in the grid.
+  7. Structured request logging with a request id in the Go handlers.
