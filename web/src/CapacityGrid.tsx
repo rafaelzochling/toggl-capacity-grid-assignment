@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError, fetchCapacity, type CapacityResponse } from './api'
+import { ApiError, fetchCapacity, type CapacityResponse, type PersonSummary } from './api'
+import { WeeklyHoursCell } from './WeeklyHoursCell'
 import { weekLabel } from './weeks'
 
 type Props = {
@@ -56,6 +57,27 @@ export function CapacityGrid({ from, to, currentWeek }: Props) {
 
   useEffect(() => loadRange(from, to), [from, to, loadRange])
 
+  // After a save the server has told us the new weekly hours, and nothing
+  // else changed: allocation does not depend on capacity. So the row is
+  // patched from the response. Other cached ranges are dropped rather than
+  // patched, so they stay correct even if capacity ever becomes per-week.
+  const onSaved = (saved: PersonSummary) => {
+    setData((cur) => {
+      if (!cur) return cur
+      const next = {
+        ...cur,
+        people: cur.people.map((p) =>
+          p.id === saved.id
+            ? { ...p, weeklyHours: saved.weeklyHours, cells: p.cells.map((c) => ({ ...c, capacity: saved.weeklyHours })) }
+            : p,
+        ),
+      }
+      cache.current.clear()
+      cache.current.set(`${from}|${to}`, next)
+      return next
+    })
+  }
+
   const retry = () => {
     cache.current.delete(`${from}|${to}`)
     loadRange(from, to)
@@ -102,7 +124,7 @@ export function CapacityGrid({ from, to, currentWeek }: Props) {
             {data.people.map((p) => (
               <tr key={p.id}>
                 <th scope="row">{p.name}</th>
-                <td className="num">{p.weeklyHours}</td>
+                <WeeklyHoursCell person={p} onSaved={onSaved} />
                 {p.cells.map((c, i) => (
                   <td key={data.weeks[i]} className={`num ${cellClass(c.allocated, c.capacity)}`}>
                     {c.allocated === 0 ? '–' : c.allocated}
