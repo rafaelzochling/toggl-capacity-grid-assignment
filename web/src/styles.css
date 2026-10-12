@@ -259,3 +259,20 @@ nav.range input[type="date"] {
   border-radius: 6px;
   padding: 0.25rem 0.5rem;
 }
+
+.status button {
+  font: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  margin-left: 0.4rem;
+}
+
+.status button:hover {
+  border-color: var(--pink);
+  background: var(--pink-soft);
+}
