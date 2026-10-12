@@ -30,3 +30,55 @@ td {
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
+
+nav.range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin: 0 0 1rem;
+}
+
+.status {
+  min-height: 1.5rem;
+  margin: 0 0 0.5rem;
+  opacity: 0.8;
+}
+
+.error {
+  color: #c62828;
+}
+
+table.stale {
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+th.num,
+td.num {
+  text-align: right;
+}
+
+th.current {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+td.empty {
+  opacity: 0.4;
+}
+
+td.full {
+  background: color-mix(in srgb, #f9a825 18%, transparent);
+}
+
+td.over {
+  background: color-mix(in srgb, #e53935 28%, transparent);
+  font-weight: 600;
+}
+
+td.over .flag {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
