@@ -45,7 +45,7 @@ describe('CapacityGrid', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: /edit weekly hours/i }).textContent).toBe('32'))
     // Capacity followed the save; allocation did not move, so 40 on 32 is now over.
-    expect(screen.getByText(/over/i)).toBeTruthy()
+    expect(screen.getByText('over', { selector: '.flag' })).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
