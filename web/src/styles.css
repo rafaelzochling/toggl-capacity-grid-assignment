@@ -1,16 +1,16 @@
-/* Toggl-flavoured theme. Palette sampled from toggl.com (2026-10):
-   plum #37083E / #4E0E58, pink #EEADFB / #EC84FF, off-white #F8F7F1,
-   lime #E9F4B3 on #20240F. Yellow #FFDE91 from Toggl Track's brand set. */
+/* Toggl Track-flavoured theme. Neutral near-black / white surfaces as in
+   the Track app, pink #E57CD8 as the single accent, yellow #FFDE91 for
+   "full" cells. Plum is reserved for the active/selected tint. */
 :root {
   color-scheme: light dark;
   font-family: "Aeonik", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --bg: #f8f7f1;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --fg: #2c0a32;
-  --fg-muted: #7a5e80;
-  --border: #e4dcd0;
-  --plum: #37083e;
-  --plum-soft: #ede3f0;
+  --fg: #2c2c2e;
+  --fg-muted: #6e6a73;
+  --border: #e6e4e8;
+  --plum: #2c2c2e;
+  --plum-soft: #f3eef4;
   --pink: #e57cd8;
   --pink-soft: #fbe6f8;
   --yellow: #ffde91;
@@ -26,15 +26,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #2a0a30;
-    --surface: #37083e;
-    --fg: #f8f7f1;
-    --fg-muted: #c9afcf;
-    --border: #5a2862;
-    --plum: #f8f7f1;
-    --plum-soft: #4e0e58;
-    --pink: #ec84ff;
-    --pink-soft: #5a1f6a;
+    --bg: #1c1b1f;
+    --surface: #2a292d;
+    --fg: #f4f2f6;
+    --fg-muted: #a39fa8;
+    --border: #3a393e;
+    --plum: #f4f2f6;
+    --plum-soft: #4a2d4a;
+    --pink: #e57cd8;
+    --pink-soft: #4a2d4a;
     --yellow: #ffde91;
     --yellow-soft: #5d4a1a;
     --over: #ff5c8a;
