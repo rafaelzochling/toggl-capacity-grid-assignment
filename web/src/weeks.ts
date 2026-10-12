@@ -4,6 +4,9 @@
 
 export type Range = { from: string; to: string }
 
+/** The API serves at most this many weeks per request. */
+export const MAX_WEEKS = 26
+
 const DAY_MS = 86_400_000
 
 export function parseDate(s: string): Date | null {
@@ -50,4 +53,16 @@ export function rangeFromToday(today: Date, r: Range): Range {
 export function weekLabel(iso: string): string {
   const d = parseDate(iso)!
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+}
+
+/** Today as a UTC date, so the UTC helpers see the local calendar day. */
+export function todayUTC(now = new Date()): Date {
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+}
+
+/** Whole weeks a valid range covers once snapped outward to Mon..Sun. */
+export function weekCount(r: Range): number {
+  const from = startOfWeek(parseDate(r.from)!)
+  const to = startOfWeek(parseDate(r.to)!)
+  return (to.getTime() - from.getTime()) / (7 * DAY_MS) + 1
 }

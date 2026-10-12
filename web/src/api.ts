@@ -36,8 +36,9 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export function fetchCapacity(from: string, to: string, signal?: AbortSignal): Promise<CapacityResponse> {
+export function fetchCapacity(from: string, to: string, signal?: AbortSignal, cursor?: number): Promise<CapacityResponse> {
   const q = new URLSearchParams({ from, to })
+  if (cursor !== undefined) q.set('cursor', String(cursor))
   return request<CapacityResponse>(`/api/capacity?${q}`, { signal })
 }
 

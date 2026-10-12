@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidRange, parseDate, rangeFromToday, shiftRange, startOfWeek, formatDate } from './weeks'
+import { isValidRange, parseDate, rangeFromToday, shiftRange, startOfWeek, formatDate, todayUTC, weekCount } from './weeks'
 
 describe('weeks', () => {
   it('finds the Monday of a week in UTC, including for a Sunday', () => {
@@ -17,6 +17,13 @@ describe('weeks', () => {
   it('anchors a range on the current week keeping its width', () => {
     const r = { from: '2025-12-29', to: '2026-01-16' }
     expect(rangeFromToday(parseDate('2026-10-14')!, r)).toEqual({ from: '2026-10-12', to: '2026-10-30' })
+  })
+
+  it('counts snapped weeks and keeps the local calendar day for today', () => {
+    expect(weekCount({ from: '2025-12-29', to: '2026-01-16' })).toBe(3)
+    expect(weekCount({ from: '2026-01-04', to: '2026-01-05' })).toBe(2) // Sunday then Monday
+    const now = new Date(2026, 9, 12, 1, 30) // local Monday 01:30, whatever the zone
+    expect(formatDate(todayUTC(now))).toBe('2026-10-12')
   })
 
   it('rejects malformed and reversed ranges', () => {
