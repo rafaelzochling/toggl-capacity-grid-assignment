@@ -81,7 +81,9 @@ export function WeeklyHoursCell({ person, onSaved }: Props) {
         {save.status === 'error' && (
           <span className="error" role="alert">
             {save.message}{' '}
-            <button type="submit" disabled={saving}>
+            {/* Safari and Firefox do not focus a clicked button, so without
+                this the input's blur would close the editor before the click. */}
+            <button type="submit" disabled={saving} onMouseDown={(e) => e.preventDefault()}>
               Retry
             </button>
           </span>

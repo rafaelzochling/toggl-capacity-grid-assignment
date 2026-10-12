@@ -89,7 +89,7 @@ export function CapacityGrid({ from, to, currentWeek }: Props) {
       (res) => {
         setLoadingMore(false)
         setData((cur) => {
-          if (!cur || cur.from !== res.from) return cur
+          if (!cur || cur.from !== res.from || cur.to !== res.to) return cur
           const next = { ...res, people: [...cur.people, ...res.people] }
           cache.current.set(key, next)
           return next
