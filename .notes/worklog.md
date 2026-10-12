@@ -29,3 +29,10 @@ left unfinished. Append as you go; a line or two per entry is right.
 - Blur cancels rather than saves, so a mis-click never writes. Unchanged value sends nothing.
 - Concurrency left as last-write-wins. Next step would be compare-and-set: `expectedWeeklyHours` in the body, 409 with the current value, UI shows "changed elsewhere to X". Needs no schema change. Not in the brief, so not built.
 - Tests: failed save keeps the draft and the retry applies the server answer; a late response for a range the user already left is ignored. Those are the two behaviours I would be nervous to change.
+
+## 2026-10-12 — adversarial review before merge
+
+- Ran a second agent over the branches as a hostile reviewer. It verified the SQL against an independent arithmetic overlap query (26 weeks × 500 people, zero diff), walked pagination with two page sizes (500 distinct, no gaps) and timed the allocation query at 134 ms for the full roster over 26 weeks.
+- It found four real defects, all fixed in this branch: only the first 100 people were shown and the summary claimed to count the whole range (now "Load more" by cursor, count labelled as loaded); an unknown cursor returned an empty 200 page (now 404); "This week" used UTC day on a local clock (Monday 01:30 in Tallinn landed on the previous week); the picker allowed ranges the API rejects and Retry looped on the 400 (now capped in the UI, no Retry on 4xx, grid dims on error).
+- It also caught a stale-closure bug in my cache re-seeding after a save: if the range changed while the PATCH was in flight, one range's rows were filed under another's key. Fixed by clearing the cache instead of re-seeding.
+- Deferred from its performance notes: the `(start_date, end_date)` index is weak for `start_date <= day` (half the table qualifies); `(person_id, start_date)` would serve this query better, and the arithmetic weekday-overlap form would cut the day-join row count ~10×. Schema is fixed for this exercise, so written down, not done.

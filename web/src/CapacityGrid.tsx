@@ -13,7 +13,7 @@ type Props = {
 type Load =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'error'; message: string }
+  | { status: 'error'; message: string; retryable: boolean }
   | { status: 'ready' }
 
 // CapacityGrid renders one row per person and one column per week.
@@ -22,6 +22,7 @@ type Load =
 export function CapacityGrid({ from, to, currentWeek }: Props) {
   const [data, setData] = useState<CapacityResponse | null>(null)
   const [load, setLoad] = useState<Load>({ status: 'idle' })
+  const [loadingMore, setLoadingMore] = useState(false)
   // Ranges already seen this session. Keyed by the requested range, so
   // stepping back a week is instant and never refetches.
   const cache = useRef(new Map<string, CapacityResponse>())
@@ -49,7 +50,8 @@ export function CapacityGrid({ from, to, currentWeek }: Props) {
       },
       (err: unknown) => {
         if (id !== latest.current || controller.signal.aborted) return
-        setLoad({ status: 'error', message: describe(err) })
+        // A 4xx is our own bad request; retrying it will not help.
+        setLoad({ status: 'error', message: describe(err), retryable: !(err instanceof ApiError && err.status < 500) })
       },
     )
     return () => controller.abort()
@@ -62,20 +64,42 @@ export function CapacityGrid({ from, to, currentWeek }: Props) {
   // patched from the response. Other cached ranges are dropped rather than
   // patched, so they stay correct even if capacity ever becomes per-week.
   const onSaved = (saved: PersonSummary) => {
-    setData((cur) => {
-      if (!cur) return cur
-      const next = {
+    // The whole cache goes, including the current range: the user may have
+    // moved on while the save was in flight, and re-seeding by key from a
+    // stale closure would file one range's rows under another's name.
+    cache.current.clear()
+    setData((cur) =>
+      cur && {
         ...cur,
         people: cur.people.map((p) =>
           p.id === saved.id
             ? { ...p, weeklyHours: saved.weeklyHours, cells: p.cells.map((c) => ({ ...c, capacity: saved.weeklyHours })) }
             : p,
         ),
-      }
-      cache.current.clear()
-      cache.current.set(`${from}|${to}`, next)
-      return next
-    })
+      },
+    )
+  }
+
+  // Next page of people for the same range, appended to what is on screen.
+  const loadMore = () => {
+    if (!data || data.nextCursor === null || loadingMore) return
+    const key = `${from}|${to}`
+    setLoadingMore(true)
+    fetchCapacity(from, to, undefined, data.nextCursor).then(
+      (res) => {
+        setLoadingMore(false)
+        setData((cur) => {
+          if (!cur || cur.from !== res.from || cur.to !== res.to) return cur
+          const next = { ...res, people: [...cur.people, ...res.people] }
+          cache.current.set(key, next)
+          return next
+        })
+      },
+      (err: unknown) => {
+        setLoadingMore(false)
+        setLoad({ status: 'error', message: describe(err), retryable: true })
+      },
+    )
   }
 
   const retry = () => {
@@ -92,21 +116,31 @@ export function CapacityGrid({ from, to, currentWeek }: Props) {
         {load.status === 'error' && (
           <span className="error">
             Could not load capacity: {load.message}{' '}
-            <button type="button" onClick={retry}>
-              Retry
-            </button>
+            {load.retryable && (
+              <button type="button" onClick={retry}>
+                Retry
+              </button>
+            )}
           </span>
         )}
         {load.status === 'ready' && data && (
           <span>
-            {data.people.length} people
-            {data.nextCursor !== null && ' (first page)'}, {overCount} over-allocated in this range
+            {data.people.length} people loaded, {overCount} over-allocated
+            {data.nextCursor !== null && (
+              <>
+                {' '}
+                (more people below){' '}
+                <button type="button" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              </>
+            )}
           </span>
         )}
       </div>
 
       {data && (
-        <table className={load.status === 'loading' ? 'stale' : undefined}>
+        <table className={load.status === 'ready' ? undefined : 'stale'}>
           <thead>
             <tr>
               <th scope="col">Person</th>

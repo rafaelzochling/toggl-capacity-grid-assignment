@@ -2,10 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
+
+// errUnknownCursor means the cursor names a person that no longer exists.
+// Returning an empty page instead would make a client believe it reached
+// the end of the roster.
+var errUnknownCursor = errors.New("unknown cursor")
 
 const (
 	defaultPageSize = 100
@@ -65,8 +74,13 @@ func (s *server) handleCapacity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := s.loadCapacity(r.Context(), rng, limit, cursor)
+	if errors.Is(err, errUnknownCursor) {
+		http.Error(w, "cursor: no such person", http.StatusNotFound)
+		return
+	}
 	if err != nil {
-		http.Error(w, "capacity query failed: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("capacity query: %v", err)
+		http.Error(w, "capacity query failed", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -93,14 +107,28 @@ func (*limitError) Error() string {
 // weekday hours of their assignments bucketed by ISO week. The dense
 // matrix is assembled here so people with no assignments still get a row.
 func (s *server) loadCapacity(ctx context.Context, rng weekRange, limit int, cursor *int) (*capacityResponse, error) {
+	// The cursor is the last person seen; resolve it to its sort key first
+	// so a vanished person is an error rather than a silently empty page.
+	var cursorName *string
+	if cursor != nil {
+		var name string
+		err := s.db.QueryRow(ctx, `SELECT name FROM people WHERE id = $1`, *cursor).Scan(&name)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errUnknownCursor
+		}
+		if err != nil {
+			return nil, err
+		}
+		cursorName = &name
+	}
+
 	// One extra row tells us whether a next page exists.
 	rows, err := s.db.Query(ctx, `
 		SELECT id, name, weekly_hours::float8
 		FROM people
-		WHERE $1::int IS NULL
-		   OR (name, id) > ((SELECT name FROM people WHERE id = $1), $1)
+		WHERE $1::int IS NULL OR (name, id) > ($2::text, $1)
 		ORDER BY name, id
-		LIMIT $2`, cursor, limit+1)
+		LIMIT $3`, cursor, cursorName, limit+1)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +196,10 @@ func (s *server) loadCapacity(ctx context.Context, rng weekRange, limit int, cur
 		if err := alloc.Scan(&personID, &week, &hours); err != nil {
 			return nil, err
 		}
-		if wi, ok := weekIndex[week]; ok {
-			people[index[personID]].Cells[wi].Allocated = hours
+		pi, known := index[personID]
+		wi, inRange := weekIndex[week]
+		if known && inRange {
+			people[pi].Cells[wi].Allocated = hours
 		}
 	}
 	if err := alloc.Err(); err != nil {
