@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -59,7 +60,8 @@ func (s *server) handleUpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, "update failed: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("update person %d: %v", id, err)
+		http.Error(w, "update failed", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, http.StatusOK, p)
